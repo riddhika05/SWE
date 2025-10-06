@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Play, Download, FileCode } from 'lucide-react';
 
 const CFGGenerator = () => {
@@ -22,7 +22,26 @@ int checkTemperature(int temp, int threshold) {
     return status;
 }`);
 
-  const [cfg, setCfg] = useState(null);
+  interface CFGNode {
+    id: number;
+    lines: string[];
+    type: string;
+    label?: string;
+  }
+
+  interface CFGEdge {
+    from: number;
+    to: number;
+    label: string;
+    color: string;
+  }
+
+  interface CFG {
+    nodes: CFGNode[];
+    edges: CFGEdge[];
+  }
+
+  const [cfg, setCfg] = useState<CFG | null>(null);
   const [error, setError] = useState('');
 
   const generateCFG = () => {
@@ -31,15 +50,13 @@ int checkTemperature(int temp, int threshold) {
       
       // Simple CFG generation logic
       const lines = cCode.split('\n').filter(line => line.trim() !== '');
-      const nodes = [];
-      const edges = [];
       let nodeId = 0;
       
       // Parse the code to identify control structures
-      const blocks = [];
-      let currentBlock = { id: nodeId++, lines: [], type: 'entry', label: 'START' };
+      const blocks: CFGNode[] = [];
+      let currentBlock: CFGNode = { id: nodeId++, lines: [], type: 'entry', label: 'START' };
       
-      lines.forEach((line, idx) => {
+      lines.forEach((line) => {
         const trimmed = line.trim();
         
         // Skip comments and braces
@@ -119,7 +136,7 @@ int checkTemperature(int temp, int threshold) {
       }
       
       // Create edges based on control flow
-      const cfgEdges = [];
+      const cfgEdges: CFGEdge[] = [];
       for (let i = 0; i < blocks.length - 1; i++) {
         const current = blocks[i];
         const next = blocks[i + 1];
@@ -158,7 +175,7 @@ int checkTemperature(int temp, int threshold) {
       setCfg({ nodes: blocks, edges: cfgEdges });
       
     } catch (err) {
-      setError('Error generating CFG: ' + err.message);
+      setError('Error generating CFG: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };
 
@@ -254,7 +271,6 @@ int checkTemperature(int temp, int threshold) {
                     const fromIdx = cfg.nodes.findIndex(n => n.id === edge.from);
                     const toIdx = cfg.nodes.findIndex(n => n.id === edge.to);
                     
-                    const fromNode = cfg.nodes[fromIdx];
                     const isFalse = edge.label === 'False';
                     
                     // True edge - straight down
